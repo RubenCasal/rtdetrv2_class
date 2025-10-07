@@ -1,50 +1,42 @@
-**Related documentation**
+# Training RT‑DETRv2
 
-* [Inference](./inference.md)
-* [Evaluation metrics](./evaluation_metrics.md)
-* [Data augmentation](./data_augmentation.md)
-* [Dataset transformation](./dataset_transformation.md)
+> **Repository documentation** (inside `documentation/`):
+>
+> * ▶️ **Inference**: [documentation/inference.md](documentation/inference.md)
+> * 📏 **Evaluation metrics**: [documentation/evaluation_metrics.md](documentation/evaluation_metrics.md)
+> * 🎛️ **Data augmentation**: [documentation/data_augmentation.md](documentation/data_augmentation.md)
+> * 🧱 **Dataset transformation**: [documentation/dataset_transformation.md](documentation/dataset_transformation.md)
 
-# Inference (image) — RT‑DETRv2
+This section explains how to run the main training entrypoint for the RT‑DETRv2 model in this repository.
 
-This script runs single‑image inference with your trained RT‑DETRv2 checkpoint and draws detections.
+## Environment
 
-## What it does
-
-* Loads a checkpoint from `CHECKPOINT` in **inference** mode.
-* Reads an image from `IMAGE_PATH`.
-* Runs `predict(image, class_thresholds=...)` and prints wall‑clock latency (`TIME` in ms) and raw results.
-* Renders boxes/labels with `draw_results(...)` and displays the annotated image.
-
-## How to run
+Install all dependencies with the provided script. It creates a Conda environment with **Python 3.12.11** and pinned package versions.
 
 ```bash
-# activate the repo environment
-conda activate <your_env_name>
-
-# run the script
-python main_infer_image.py
+chmod +x create_env.sh
+./create_env.sh
+conda activate rtdetr_env
 ```
+
+## Data
+
+`DATASET_PATH` must point to a dataset compatible with your `load_custom_dataset` implementation (COCO‑style boxes `[x, y, w, h]`, class indices, and `train/validation/test` splits).
 
 ## Configure
 
-* `CHECKPOINT`: path to your trained checkpoint directory (e.g., `./rtdetr-v2-r50-cppe5-finetune-2/checkpoint-500`).
-* `IMAGE_PATH`: path to the input image (e.g., `image.png`).
-* `CLASS_THRESHOLDS`: per‑class confidence thresholds (required). Example:
+Open `main_train.py` (or your chosen entry file) and set:
 
-  ```python
-  CLASS_THRESHOLDS = {0: 0.4, 1: 0.4, 2: 0.4}  # person, vehicle, boat
-  ```
+* `MODE = "train"`
+* `CHECKPOINT` → path to the pretrained weights or a local checkpoint
+* `DATASET_PATH`, `OUTPUT_DIR`, `IMAGE_SIZE`, `TRAINING_EPOCHS`, `WARMUP_STEPS`, `LEARNING_RATE`, `BATCH_SIZE`
 
-## Output
+## Run
 
-* Console prints total inference time and the filtered detections dictionary:
+```bash
+python main_train.py
+```
 
-  * `scores`: confidences (tensor)
-  * `labels`: class ids (tensor)
-  * `boxes`: `[x_min, y_min, x_max, y_max]` in pixels (tensor)
-* A window pops up with the annotated image. To save it instead of (or in addition to) showing it:
+## Outputs
 
-  ```python
-  annotated_image.save("pred.png")
-  ```
+The training pipeline writes artifacts to `OUTPUT_DIR`. The model saves both the **best** checkpoint (based on your configured evaluation metric) and the **last** checkpoint at the end of training.
